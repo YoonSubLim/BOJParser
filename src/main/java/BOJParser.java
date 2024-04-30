@@ -1,3 +1,6 @@
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -56,6 +59,7 @@ public class BOJParser {
                 // 1일 전 푼 문제가 있다면, List 에 저장
                 if (daysDifference == 1) {
                     String solve_info = problem_title + " " + problem_number + " " + getDifficulty(problem_number) + " " + datetimeStr.split("\\s+")[1];
+                    sendToMatterMost(solve_info); // TODO: move to outer
                     solvedProblems.add(solve_info.split("\\s+"));
                 } else if (daysDifference >= 2) {
                     break;
@@ -102,5 +106,55 @@ public class BOJParser {
         System.out.println("검색 결과 첫 문제난이도 이미지 : " + image_url);
 
         return difficulty + " " + image_url;
+    }
+
+    // TODO : User 별로 정보 얻어, requestBody 에 add 한 뒤 Send Request
+    private static boolean sendToMatterMost(String message) {
+
+        try {
+            // 요청을 보낼 URL 설정
+            URL url = new URL("https://meeting.ssafy.com/hooks/x4j366d1y78njkegfpygggtqce");
+
+            // HttpURLConnection 객체 생성
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            // 요청 메소드 설정
+            connection.setRequestMethod("POST");
+
+            // 요청 헤더 설정
+            connection.setRequestProperty("Content-Type", "application/json");
+
+            // 요청 바디 작성
+            String text = String.format("""
+                    |   Coffee   |   이름   |   푼 문제   |   푼 시간   |
+                    |:----------:|:-------:|:----------:|:----------:|
+                    |            |  임윤섭  |    1234    |  23:43:44  |
+                    |            |         |    4321    |  23:43:44  |
+                    |            |         |   240430   |  23:43:44  |
+                    |  :coffee:  |  이승원  |            |            |
+                    """);
+
+            String requestBody = "{\"text\": \"" + text + "\"}";
+
+            // 요청 바디 전송 설정
+            connection.setDoOutput(true);
+
+            // 요청 바디를 OutputStream을 통해 전송
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = requestBody.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            // 응답 코드 확인
+            int responseCode = connection.getResponseCode();
+            System.out.println("Response Code: " + responseCode);
+
+            // 연결 종료
+            connection.disconnect();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
