@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -56,18 +55,52 @@ public class BOJParser {
 
                 // 1일 전 푼 문제가 있다면, List 에 저장
                 if (daysDifference == 1) {
-                    // TODO : 난이도 추가 저장
-                    solvedProblems.add(new String[] {problem_title, problem_number});
+                    String solve_info = problem_title + " " + problem_number + " " + getDifficulty(problem_number) + " " + datetimeStr.split("\\s+")[1];
+                    solvedProblems.add(solve_info.split("\\s+"));
                 } else if (daysDifference >= 2) {
                     break;
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
+        System.out.println();
         for (String[] str: solvedProblems) {
-            System.out.println(str[0] + " " + str[1]);
+            for (String s: str) {
+                System.out.print(s + " ");
+            }
+            System.out.println();
         }
+    }
+
+    private static String getDifficulty(String problem_number) throws Exception {
+
+        String solvedacBaseUrl = "https://solved.ac/search?query="; // + problem number
+        System.out.println("REQEUST URL : " + solvedacBaseUrl + problem_number);
+
+        Document doc = Jsoup.connect(solvedacBaseUrl + problem_number).get();
+
+        // (난이도이미지 + 문제번호) 가 포함된 <a> 인 첫번째 Element 를 가져온다.
+        Element problem = doc.selectFirst(".css-q9j30p");
+        if (problem == null) throw new Exception();
+
+        System.out.println(problem);
+
+        System.out.println();
+        System.out.println("검색 결과 첫 문제번호 : " + problem.text());
+
+        // 일치하는 문제가 없음 (
+        if (!problem_number.equals(problem.text())) {
+            throw new Exception();
+        }
+
+        Element difficulty_image_tag = problem.getElementsByClass("css-1vnxcg0").get(0);
+        String difficulty = difficulty_image_tag.attr("alt");
+        String image_url = difficulty_image_tag.attr("src");
+        System.out.println("검색 결과 첫 문제난이도 : " + difficulty); // Unrated
+        System.out.println("검색 결과 첫 문제난이도 이미지 : " + image_url);
+
+        return difficulty + " " + image_url;
     }
 }
