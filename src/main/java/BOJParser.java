@@ -17,13 +17,24 @@ import org.jsoup.select.Elements;
 public class BOJParser {
 
     public static void start(Context context) {
+//    public static void main(String[] args) {
 
-        String url = "https://www.acmicpc.net/status?option-status-pid=on&problem_id=&user_id=yslim37&language_id=-1&result_id=-1"; // 가져올 웹 페이지의 URL
-        ArrayList<String[]> solvedProblems = new ArrayList<>();
+        StringBuilder resultMsg = new StringBuilder();
+
+        for (UserInfo user : UserInfo.values()) {
+            resultMsg.append(getUserResult(user));
+        }
+        sendToMatterMost(resultMsg.toString());
+    }
+
+    private static String getUserResult(UserInfo user) {
+
+        String boj_url = "https://www.acmicpc.net/status?option-status-pid=on&problem_id=&user_id=" + user.getUserId() +"&language_id=-1&result_id=-1"; // 가져올 웹 페이지의 URL
+        ArrayList<Problem> solvedProblems = new ArrayList<>();
 
         try {
             // Jsoup을 사용하여 GET 요청을 보내고 HTML 문서를 파싱합니다.
-            Document doc = Jsoup.connect(url).get();
+            Document doc = Jsoup.connect(boj_url).get();
 
             //　제출　단위로 Elements 파싱
             Elements submits = doc.select("#status-table>tbody>tr");
@@ -60,9 +71,14 @@ public class BOJParser {
 
                 // 1일 전 푼 문제가 있다면, List 에 저장
                 if (daysDifference == 1) {
-                    String solve_info = problem_title + " " + problem_number + " " + getDifficulty(problem_number) + " " + datetimeStr.split("\\s+")[1];
-                    sendToMatterMost(solve_info); // TODO: move to outer
-                    solvedProblems.add(solve_info.split("\\s+"));
+                    Problem problem = Problem.builder()
+                            .title(problem_title)
+                            .number(problem_number)
+                            .solvedTime(datetimeStr.split("\\s+")[1])
+                            .build();
+                    setDifficulty(problem); // problem 객체에 난이도 정보 set
+                    // TODO : silver 2 이상일 때만 넣기
+                    solvedProblems.add(problem);
                 } else if (daysDifference >= 2) {
                     break;
                 }
@@ -71,46 +87,60 @@ public class BOJParser {
             e.printStackTrace();
         }
 
-        System.out.println();
-        for (String[] str: solvedProblems) {
-            for (String s: str) {
-                System.out.print(s + " ");
-            }
-            System.out.println();
-        }
+        return makeMessage(user, solvedProblems);
     }
 
-    private static String getDifficulty(String problem_number) throws Exception {
+    private static void setDifficulty(Problem problem) throws Exception {
 
         String solvedacBaseUrl = "https://solved.ac/search?query="; // + problem number
-        System.out.println("REQEUST URL : " + solvedacBaseUrl + problem_number);
 
-        Document doc = Jsoup.connect(solvedacBaseUrl + problem_number).get();
+        Document doc = Jsoup.connect(solvedacBaseUrl + problem.getNumber()).get();
 
         // (난이도이미지 + 문제번호) 가 포함된 <a> 인 첫번째 Element 를 가져온다.
-        Element problem = doc.selectFirst(".css-q9j30p");
-        if (problem == null) throw new Exception();
+        Element problem_element = doc.selectFirst(".css-q9j30p");
+        if (problem_element == null) throw new Exception();
 
-        System.out.println(problem);
-
-        System.out.println();
-        System.out.println("검색 결과 첫 문제번호 : " + problem.text());
-
-        // 일치하는 문제가 없음 (
-        if (!problem_number.equals(problem.text())) {
+        // 일치하는 문제가 없음 (Solved AC 에 등록되지 않은 문제 등)
+        if (!problem.getNumber().equals(problem_element.text())) {
             throw new Exception();
         }
 
-        Element difficulty_image_tag = problem.getElementsByClass("css-1vnxcg0").get(0);
+        Element difficulty_image_tag = problem_element.getElementsByClass("css-1vnxcg0").get(0);
         String difficulty = difficulty_image_tag.attr("alt");
         String image_url = difficulty_image_tag.attr("src");
-        System.out.println("검색 결과 첫 문제난이도 : " + difficulty); // Unrated
-        System.out.println("검색 결과 첫 문제난이도 이미지 : " + image_url);
 
-        return difficulty + " " + image_url;
+        problem.setDifficulty(difficulty);
+        problem.setDifficultyImageURL(image_url);
     }
 
-    // TODO : User 별로 정보 얻어, requestBody 에 add 한 뒤 Send Request
+    // 시간의 11:42:55 등의 예시에서, :42: 가 custom emoji 로 인식되기 때문에 `백틱`을 추가하여 변형
+    private static String makeMessage(UserInfo user, ArrayList<Problem> solvedProblems) {
+        StringBuilder sb = new StringBuilder();
+
+        // 안 푼 경우
+        if (solvedProblems.isEmpty()) {
+            sb.append(String.format("| :coffee: | **%s** (%s) | | |\n",
+                    user.getUserName(),
+                    user.getUserId()));
+        } else {
+            sb.append(String.format("| | **%s** (%s) | %s %s. %s | `%s` |\n",
+                    user.getUserName(),
+                    user.getUserId(),
+                    solvedProblems.get(0).getDifficultyEmoji(),
+                    solvedProblems.get(0).getNumber(),
+                    solvedProblems.get(0).getTitle(),
+                    solvedProblems.get(0).getSolvedTime()));
+            for (int i = 1; i < solvedProblems.size(); i++) {
+                sb.append(String.format("| | | %s %s. %s | `%s` |\n",
+                        solvedProblems.get(i).getDifficultyEmoji(),
+                        solvedProblems.get(i).getNumber(),
+                        solvedProblems.get(i).getTitle(),
+                        solvedProblems.get(i).getSolvedTime()));
+            }
+        }
+        return sb.toString();
+    }
+
     private static boolean sendToMatterMost(String message) {
 
         try {
@@ -128,15 +158,11 @@ public class BOJParser {
 
             // 요청 바디 작성
             String text = String.format("""
-                    |   Coffee   |   이름   |   푼 문제   |   푼 시간   |
-                    |:----------:|:-------:|:----------:|:----------:|
-                    |            |  임윤섭  |    1234    |  23:43:44  |
-                    |            |         |    4321    |  23:43:44  |
-                    |            |         |   240430   |  23:43:44  |
-                    |  :coffee:  |  이승원  |            |            |
+                    |   Coffee   |   이름   |   맞은 문제   |   푼 시간   |
+                    |:----------:|:-------|:------------|:----------:|
                     """);
 
-            String requestBody = "{\"text\": \"" + text + "\"}";
+            String requestBody = "{\"text\": \"" + text + message + "\"}";
 
             // 요청 바디 전송 설정
             connection.setDoOutput(true);
