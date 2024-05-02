@@ -20,6 +20,11 @@ dependencies {
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.2'
     implementation 'com.amazonaws:aws-lambda-java-events:3.11.1'
     runtimeOnly 'com.amazonaws:aws-lambda-java-log4j2:1.5.1'
+
+    // lombok
+    // https://mvnrepository.com/artifact/org.projectlombok/lombok
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
+    annotationProcessor('org.projectlombok:lombok')
 }
 
 test {
