@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import org.jsoup.Jsoup;
@@ -118,7 +119,7 @@ public class BOJParser {
     // 시간의 11:42:55 등의 예시에서, :42: 가 custom emoji 로 인식되기 때문에 `백틱`을 추가하여 변형
     private static String makeMessage(UserInfo user, ArrayList<Problem> solvedProblems) {
         StringBuilder sb = new StringBuilder();
-
+        
         // 안 푼 경우
         if (solvedProblems.isEmpty()) {
             sb.append(String.format("| :coffee: | **%s** (%s) | | |\n",
@@ -159,12 +160,20 @@ public class BOJParser {
             connection.setRequestProperty("Content-Type", "application/json");
 
             // 요청 바디 작성
-            String text = String.format("""
+            StringBuilder sb = new StringBuilder();
+            LocalDate yesterday = LocalDate.now().minusDays(1);
+            // 원하는 형식의 날짜 포맷터 생성
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd'th', yyyy", Locale.ENGLISH);
+            // 현재 날짜와 시간을 원하는 형식의 문자열로 변환
+            String formattedDate = yesterday.format(formatter);
+
+            sb.append("#### :rotating_light: 스트릭 챌린지 결과 for ").append(formattedDate).append("\\n");
+            sb.append("""
                     |   Coffee   |   이름   |   맞은 문제   |   푼 시간   |
                     |:----------:|:-------|:------------|:----------:|
                     """);
 
-            String requestBody = "{\"text\": \"" + text + message + "\"}";
+            String requestBody = "{\"text\": \"" + sb.toString() + message + "\"}";
 
             // 요청 바디 전송 설정
             connection.setDoOutput(true);
