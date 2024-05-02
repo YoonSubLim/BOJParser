@@ -77,8 +77,10 @@ public class BOJParser {
                             .solvedTime(datetimeStr.split("\\s+")[1])
                             .build();
                     setDifficulty(problem); // problem 객체에 난이도 정보 set
-                    // TODO : silver 2 이상일 때만 넣기
-                    solvedProblems.add(problem);
+
+                    if (problem.validateSilver2()) {
+                        solvedProblems.add(problem);
+                    }
                 } else if (daysDifference >= 2) {
                     break;
                 }
