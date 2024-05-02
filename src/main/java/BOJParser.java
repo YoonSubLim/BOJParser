@@ -1,12 +1,14 @@
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
+import com.amazonaws.services.lambda.runtime.Context;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,7 +16,7 @@ import org.jsoup.select.Elements;
 
 public class BOJParser {
 
-    public static void main(String[] args) {
+    public static void start(Context context) {
 
         String url = "https://www.acmicpc.net/status?option-status-pid=on&problem_id=&user_id=yslim37&language_id=-1&result_id=-1"; // 가져올 웹 페이지의 URL
         ArrayList<String[]> solvedProblems = new ArrayList<>();
@@ -141,7 +143,7 @@ public class BOJParser {
 
             // 요청 바디를 OutputStream을 통해 전송
             try (OutputStream os = connection.getOutputStream()) {
-                byte[] input = requestBody.getBytes("utf-8");
+                byte[] input = requestBody.getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
 
