@@ -5,8 +5,8 @@ public enum UserInfo {
     USER3("김지원", "gokim0928"),
     USER4("박지훈", "java_java"),
     USER5("유재광", "dbworhkd97"),
-    USER6("이승원", "wlk256032"),
-    USER7("임윤섭", "yslim37");
+    USER6("이승원", "wlk256032");
+//    USER7("임윤섭", "yslim37");
 
     private final String userName;
     private final String userId;
