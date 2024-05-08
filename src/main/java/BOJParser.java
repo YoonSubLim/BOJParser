@@ -4,6 +4,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public class BOJParser {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 LocalDateTime datetime = LocalDateTime.parse(datetimeStr, formatter);
 
-                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
                 // 각 LocalDateTime 객체의 날짜 부분 추출
                 LocalDate date1 = datetime.toLocalDate();
