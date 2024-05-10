@@ -162,7 +162,7 @@ public class BOJParser {
 
             // 요청 바디 작성
             StringBuilder sb = new StringBuilder();
-            LocalDate yesterday = LocalDate.now().minusDays(1);
+            LocalDate yesterday = LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1);
             // 원하는 형식의 날짜 포맷터 생성
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd'th', yyyy", Locale.ENGLISH);
             // 현재 날짜와 시간을 원하는 형식의 문자열로 변환
